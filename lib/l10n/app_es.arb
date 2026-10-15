@@ -1,0 +1,136 @@
+{
+  "@@locale": "es",
+
+  "appTitle": "VisionDesc",
+  "@appTitle": { "description": "Nombre de la app" },
+
+  "commonBack": "Atrás",
+  "commonVoiceCommand": "Comando de voz",
+  "commonVoiceCommandHint": "Di, por ejemplo, capturar o historial",
+  "commonInfoPrefix": "Información",
+  "commonWarningPrefix": "Advertencia",
+  "commonErrorPrefix": "Error",
+
+  "adjustDecrease": "Disminuir {label}",
+  "@adjustDecrease": { "placeholders": { "label": { "type": "String" } } },
+  "adjustIncrease": "Aumentar {label}",
+  "@adjustIncrease": { "placeholders": { "label": { "type": "String" } } },
+
+  "optionPosition": "{option}, {index} de {total}",
+  "@optionPosition": {
+    "placeholders": {
+      "option": { "type": "String" },
+      "index": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "homeTitle": "VisionDesc",
+  "homeTitleSemantics": "VisionDesc, inicio",
+  "homeCaptureLabel": "Capturar",
+  "homeCaptureHint": "Fotografía la pizarra o una diapositiva",
+  "homeImportLabel": "Importar archivo",
+  "homeImportHint": "Imagen, PDF o PowerPoint",
+  "homeHistoryLabel": "Historial",
+  "homeSettingsLabel": "Ajustes",
+
+  "captureTitle": "Capturar",
+  "captureGuidance": "Lista para capturar",
+  "captureVoiceGuidance": "Guía por voz",
+  "captureFlashlight": "Linterna",
+  "captureAutoCapture": "Captura automática",
+  "captureTakePhoto": "Tomar foto",
+  "captureTakePhotoHint": "Analiza la foto y abre el resultado",
+  "capturePhotoTaken": "Foto tomada. Abriendo el resultado.",
+
+  "importTitle": "Importar archivo",
+  "importImage": "Imagen de la galería",
+  "importPdf": "PDF",
+  "importPowerPoint": "Presentación PowerPoint",
+  "importMaxSize": "Tamaño máximo: 20 megabytes.",
+
+  "resultTitle": "Diagrama de clases: Sistema de pedidos",
+  "resultReadingHeader": "Lectura",
+  "resultPreviousSection": "Sección anterior",
+  "resultNextSection": "Sección siguiente",
+  "resultReadSection": "Leer sección",
+  "resultReadSectionHint": "El lector de pantalla lee la sección actual",
+  "resultCurrentSection": "Sección actual: {section}",
+  "@resultCurrentSection": { "placeholders": { "section": { "type": "String" } } },
+  "resultSpeed": "Velocidad",
+  "resultSpeedValue": "{rate} por",
+  "@resultSpeedValue": { "placeholders": { "rate": { "type": "String" } } },
+  "resultFirstSection": "Ya estás en la primera sección.",
+  "resultLastSection": "Ya estás en la última sección.",
+  "resultSummary": "Resumen",
+  "resultDetailed": "Descripción detallada",
+  "resultStructure": "Estructura",
+  "resultStructureCount": "{nodes} nodos y {relations} relaciones.",
+  "@resultStructureCount": {
+    "placeholders": { "nodes": { "type": "int" }, "relations": { "type": "int" } }
+  },
+  "resultExploreStructure": "Explorar estructura",
+  "resultDetectedText": "Texto detectado",
+  "resultCode": "Código ({language})",
+  "@resultCode": { "placeholders": { "language": { "type": "String" } } },
+  "resultCodeLine": "Línea {number}: {code}",
+  "@resultCodeLine": {
+    "placeholders": { "number": { "type": "int" }, "code": { "type": "String" } }
+  },
+  "resultKeyConcepts": "Conceptos clave",
+  "resultAiNotice": "Descripción generada por inteligencia artificial; puede contener errores.",
+  "resultAsk": "Hacer una pregunta",
+  "resultAskSemantics": "Hacer una pregunta sobre este material",
+  "resultSave": "Guardar en historial",
+
+  "historyTitle": "Historial",
+  "historySearch": "Buscar en el historial",
+  "historyResultsCount": "{count, plural, =0{Sin resultados} =1{1 resultado} other{{count} resultados}}",
+  "@historyResultsCount": { "placeholders": { "count": { "type": "int" } } },
+  "historyItemSemantics": "{title}. {subject}, {date}.",
+  "@historyItemSemantics": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "subject": { "type": "String" },
+      "date": { "type": "String" }
+    }
+  },
+  "historyGroupSemantics": "{subject}, {count, plural, =1{1 elemento} other{{count} elementos}}",
+  "@historyGroupSemantics": {
+    "placeholders": { "subject": { "type": "String" }, "count": { "type": "int" } }
+  },
+
+  "settingsTitle": "Ajustes",
+  "settingsVoiceHeader": "Voz",
+  "settingsSpeechRate": "Velocidad de lectura",
+  "settingsDescriptionHeader": "Descripción",
+  "settingsDetailLevel": "Nivel de detalle",
+  "detailBrief": "Breve",
+  "detailBriefDescription": "Resumen y lo principal",
+  "detailStandard": "Estándar",
+  "detailStandardDescription": "Recomendado",
+  "detailExhaustive": "Exhaustivo",
+  "detailExhaustiveDescription": "Todo lo visible",
+  "settingsAppearanceHeader": "Apariencia",
+  "settingsTextSizeNote": "El tamaño del texto se ajusta en la configuración de accesibilidad del teléfono.",
+  "settingsFeedbackHeader": "Retroalimentación",
+  "settingsVibration": "Vibración",
+  "settingsAboutHeader": "Acerca de",
+  "settingsVersion": "Versión {version}",
+  "@settingsVersion": { "placeholders": { "version": { "type": "String" } } },
+  "settingsChanged": "{setting}: {value}",
+  "@settingsChanged": {
+    "placeholders": { "setting": { "type": "String" }, "value": { "type": "String" } }
+  },
+  "settingsOn": "activada",
+  "settingsOff": "desactivada",
+
+  "themeHeader": "Tema",
+  "themeSystem": "Igual que el sistema",
+  "themeLight": "Claro",
+  "themeDark": "Oscuro",
+  "themeHighContrast": "Alto contraste",
+
+  "pendingStructureTitle": "Explorar estructura",
+  "pendingChatTitle": "Preguntas"
+}
