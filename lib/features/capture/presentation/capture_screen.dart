@@ -166,19 +166,17 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
   Future<void> _takeAnotherPhoto() async {
     await _stopAudio();
     final controller = _cameraController;
-    if (controller != null && controller.value.isInitialized) {
-      try {
-        await controller.resumePreview();
-      } catch (error) {
-        debugPrint('No fue posible reanudar la vista de cámara: $error');
-      }
+    if (controller != null) {
+      await controller.dispose();
     }
     if (mounted) {
       setState(() {
+        _cameraController = null;
         _capturedImage = null;
         _processingMessage = null;
       });
       ref.read(announcerProvider).announce('Cámara lista para otra foto.');
+      await _initializeCamera();
     }
   }
 
@@ -213,7 +211,10 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
         StatusRegion(message: l10n.captureGuidance, large: true),
         if (_processingMessage != null) ...[
           const SizedBox(height: Dimensions.spacingBetweenTargets),
-          StatusRegion(message: _processingMessage!, large: true),
+          _ProcessingStatus(
+            message: _processingMessage!,
+            isProcessing: _isProcessing,
+          ),
         ],
         const SizedBox(height: Dimensions.spacingBetweenTargets),
         AccessibleSwitchTile(
@@ -280,6 +281,7 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
                       child: _CameraView(
                         controller: _cameraController,
                         capturedImage: _capturedImage,
+                        isLoading: _isProcessing,
                       ),
                     ),
                     const SizedBox(width: Dimensions.pagePadding),
@@ -302,6 +304,7 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
                     child: _CameraView(
                       controller: _cameraController,
                       capturedImage: _capturedImage,
+                      isLoading: _isProcessing,
                     ),
                   ),
                   const SizedBox(height: Dimensions.spacingBetweenTargets),
@@ -316,13 +319,61 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
   }
 }
 
+class _ProcessingStatus extends StatelessWidget {
+  const _ProcessingStatus({required this.message, required this.isProcessing});
+
+  final String message;
+  final bool isProcessing;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isProcessing) return StatusRegion(message: message, large: true);
+
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: message,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(Dimensions.pagePadding),
+        decoration: BoxDecoration(
+          color: AppColors.of(context).surface,
+          borderRadius: BorderRadius.circular(Dimensions.cornerRadius),
+          border: Border.all(color: AppColors.of(context).outline),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(strokeWidth: 3),
+            ),
+            const SizedBox(width: Dimensions.spacingBetweenTargets),
+            Expanded(
+              child: Text(
+                message,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Lugar de la vista de cámara. Se excluye de la semántica: no aporta
 /// información al lector y obligaría a recorrer un elemento vacío.
 class _CameraView extends StatelessWidget {
-  const _CameraView({required this.controller, required this.capturedImage});
+  const _CameraView({
+    required this.controller,
+    required this.capturedImage,
+    required this.isLoading,
+  });
 
   final CameraController? controller;
   final Uint8List? capturedImage;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -334,17 +385,42 @@ class _CameraView extends StatelessWidget {
           borderRadius: BorderRadius.circular(Dimensions.cornerRadius),
           border: Border.all(color: tokens.outline, width: 2),
         ),
-        child: capturedImage != null
-            ? Image.memory(capturedImage!, fit: BoxFit.contain)
-            : controller?.value.isInitialized == true
-            ? CameraPreview(controller!)
-            : Center(
+        child: Stack(
+          fit: StackFit.expand,
+          alignment: Alignment.center,
+          children: [
+            if (capturedImage != null)
+              Image.memory(capturedImage!, fit: BoxFit.contain)
+            else if (controller?.value.isInitialized == true)
+              CameraPreview(controller!)
+            else
+              Center(
                 child: Icon(
                   Icons.photo_camera_outlined,
                   size: 64,
                   color: tokens.onSurfaceVariant,
                 ),
               ),
+            if (isLoading)
+              ColoredBox(
+                color: Colors.black54,
+                child: Center(
+                  child: Semantics(
+                    label: 'Procesando tu imagen',
+                    liveRegion: true,
+                    child: const SizedBox(
+                      width: 56,
+                      height: 56,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 5,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
