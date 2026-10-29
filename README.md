@@ -6,16 +6,41 @@ La accesibilidad (WCAG 2.2 AA) es el requisito central de cada pantalla.
 
 ## Estado actual
 
-**Documentación + front de demostración responsivo.** Las pantallas y los botones funcionan con datos de ejemplo. Todavía **no** están conectados la IA (Gemini), la cámara, la voz ni la base de datos.
+**Frontend responsivo + backend local de procesamiento.** La cámara web muestra
+video en vivo y envía la captura al backend para obtener una descripción de
+accesibilidad en audio. También se pueden importar imágenes, PDF y PowerPoint.
+El backend envía el material a Gemini y no conserva los archivos después de
+procesarlos.
 
 | Pantalla | Qué se puede probar |
 |---|---|
-| Inicio | 4 botones grandes + Comando de voz (desactivado) |
+| Inicio | 4 botones grandes |
 | Capturar | Guía visible y leída por TalkBack, interruptores; "Tomar foto" abre un resultado de ejemplo |
 | Importar archivo | Imagen, PDF y PowerPoint |
 | Resultado | Diagrama UML de ejemplo con secciones navegables por encabezados, barra de lectura (sección anterior, leer sección, siguiente), velocidad, código línea por línea |
 | Historial | Ejemplos agrupados por materia, con búsqueda que anuncia el número de resultados |
 | Ajustes | Tema (claro, oscuro, alto contraste), nivel de detalle, velocidad y vibración; **se guardan** |
+
+### Ejecutar el backend de reconocimiento
+
+En otra terminal, configura `backend/.env` con tu clave de Google AI Studio:
+
+```env
+GEMINI_API_KEY=tu_clave_de_google_ai_studio
+FRONTEND_ORIGIN=http://127.0.0.1:8080
+```
+
+Después ejecuta:
+
+```bash
+cd backend
+npm install
+npm start
+```
+
+El endpoint `POST /api/convertir` recibe el archivo en el campo `documento` y
+devuelve audio MP3. Consulta [backend/README.md](backend/README.md) para probar
+el endpoint con `curl`.
 
 ## Documentación
 

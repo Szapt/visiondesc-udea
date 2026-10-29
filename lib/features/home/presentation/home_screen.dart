@@ -5,14 +5,12 @@ import '../../../core/accessibility/widgets/accessible_button.dart';
 import '../../../core/accessibility/widgets/headings.dart';
 import '../../../core/layout/responsive.dart';
 import '../../../core/router/app_router.dart';
-import '../../../core/theme/dimensions.dart';
 import '../../../l10n/generated/app_localizations.dart';
 
-/// Pantalla de inicio (UI.md §4.2): cuatro botones grandes y el botón de
-/// comando de voz.
+/// Pantalla de inicio (UI.md §4.2): cuatro botones grandes.
 ///
 /// Orden de foco: título → Capturar → Importar →
-/// Historial → Ajustes → Comando de voz.
+/// Historial → Ajustes.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -22,7 +20,10 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: ScreenTitle(l10n.homeTitle, semanticLabel: l10n.homeTitleSemantics),
+        title: ScreenTitle(
+          l10n.homeTitle,
+          semanticLabel: l10n.homeTitleSemantics,
+        ),
       ),
       body: ResponsiveBody(
         children: [
@@ -61,16 +62,6 @@ class HomeScreen extends StatelessWidget {
                 onPressed: () => context.push(AppRoutes.settings),
               ),
             ],
-          ),
-          const SizedBox(height: Dimensions.spacingBetweenTargets),
-          AccessibleButton(
-            label: l10n.commonVoiceCommand,
-            hint: l10n.commonVoiceCommandHint,
-            icon: Icons.mic_none,
-            size: AccessibleButtonSize.large,
-            variant: AccessibleButtonVariant.secondary,
-            expand: true,
-            onPressed: null,
           ),
         ],
       ),

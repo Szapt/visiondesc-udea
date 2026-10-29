@@ -16,12 +16,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonBack => 'Atrás';
 
   @override
-  String get commonVoiceCommand => 'Comando de voz';
-
-  @override
-  String get commonVoiceCommandHint => 'Di, por ejemplo, capturar o historial';
-
-  @override
   String get commonInfoPrefix => 'Información';
 
   @override

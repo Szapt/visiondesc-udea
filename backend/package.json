@@ -1,0 +1,22 @@
+{
+  "name": "visiondesc-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend ligero para convertir documentos accesibles en audio",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "google-tts-api": "^2.0.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}

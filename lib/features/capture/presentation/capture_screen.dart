@@ -1,16 +1,21 @@
 import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:audioplayers/audioplayers.dart';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../../../core/accessibility/haptic_service.dart';
 import '../../../core/accessibility/widgets/accessible_button.dart';
 import '../../../core/accessibility/widgets/accessible_switch_tile.dart';
+import '../../../core/accessibility/widgets/audio_controls.dart';
 import '../../../core/accessibility/widgets/headings.dart';
 import '../../../core/accessibility/widgets/status_region.dart';
 import '../../../core/providers/core_providers.dart';
-import '../../../core/router/app_router.dart';
 import '../../../core/theme/color_tokens.dart';
 import '../../../core/theme/dimensions.dart';
 import '../../../l10n/generated/app_localizations.dart';
@@ -28,15 +33,174 @@ class CaptureScreen extends ConsumerStatefulWidget {
 }
 
 class _CaptureScreenState extends ConsumerState<CaptureScreen> {
+  CameraController? _cameraController;
+  AudioPlayer? _audioPlayer;
+  final FlutterTts _tts = FlutterTts();
+  Uint8List? _capturedImage;
   bool _voiceGuidance = true;
   bool _flashlight = false;
   bool _autoCapture = false;
+  bool _isProcessing = false;
+  bool _isAudioPaused = false;
+  String? _processingMessage;
 
-  void _takePhoto() {
-    final l10n = AppLocalizations.of(context);
-    unawaited(ref.read(hapticServiceProvider).play(HapticPattern.captura));
-    ref.read(announcerProvider).announce(l10n.capturePhotoTaken);
-    unawaited(context.push(AppRoutes.result));
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_initializeCamera());
+  }
+
+  Future<void> _initializeCamera() async {
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) return;
+
+      final camera = cameras.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.back,
+        orElse: () => cameras.first,
+      );
+      final controller = CameraController(
+        camera,
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+      await controller.initialize();
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      setState(() => _cameraController = controller);
+    } catch (error) {
+      debugPrint('No fue posible iniciar la cámara: $error');
+    }
+  }
+
+  Future<void> _takePhoto() async {
+    final controller = _cameraController;
+    if (controller == null ||
+        !controller.value.isInitialized ||
+        _isProcessing) {
+      return;
+    }
+
+    try {
+      final photo = await controller.takePicture();
+      final photoBytes = await photo.readAsBytes();
+      if (mounted) {
+        setState(() {
+          _isProcessing = true;
+          _capturedImage = photoBytes;
+          _processingMessage = 'Procesando tu imagen.';
+        });
+      }
+      await _speakProcessingMessage();
+      ref.read(announcerProvider).announce('Procesando tu imagen.');
+      final request =
+          http.MultipartRequest(
+              'POST',
+              Uri.parse('http://localhost:3000/api/convertir'),
+            )
+            ..files.add(
+              http.MultipartFile.fromBytes(
+                'documento',
+                photoBytes,
+                filename: 'captura.jpg',
+                contentType: MediaType('image', 'jpeg'),
+              ),
+            );
+      final response = await request.send().timeout(
+        const Duration(seconds: 55),
+        onTimeout: () => throw TimeoutException(
+          'El procesamiento tardó demasiado. Intenta de nuevo.',
+        ),
+      );
+      if (response.statusCode != 200) {
+        final errorBody = await response.stream.bytesToString();
+        throw Exception(
+          'El backend respondió ${response.statusCode}: $errorBody',
+        );
+      }
+
+      final audio = await response.stream.toBytes();
+      final player = _audioPlayer ??= AudioPlayer();
+      await player.play(BytesSource(audio));
+      if (mounted) setState(() => _isAudioPaused = false);
+      unawaited(ref.read(hapticServiceProvider).play(HapticPattern.captura));
+      ref
+          .read(announcerProvider)
+          .announce('Descripción lista. Reproduciendo audio.');
+    } catch (error) {
+      debugPrint('No fue posible analizar la captura: $error');
+      if (mounted) {
+        final message = 'No fue posible analizar la captura: $error';
+        setState(() => _processingMessage = message);
+        ref.read(announcerProvider).announce(message);
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<void> _toggleAudio() async {
+    final player = _audioPlayer;
+    if (player == null) return;
+    if (_isAudioPaused) {
+      await player.resume();
+      if (mounted) setState(() => _isAudioPaused = false);
+      ref.read(announcerProvider).announce('Audio reanudado.');
+    } else {
+      await player.pause();
+      if (mounted) setState(() => _isAudioPaused = true);
+      ref.read(announcerProvider).announce('Audio pausado.');
+    }
+  }
+
+  Future<void> _stopAudio() async {
+    final player = _audioPlayer;
+    if (player == null) return;
+    await player.stop();
+    if (mounted) setState(() => _isAudioPaused = false);
+    ref.read(announcerProvider).announce('Audio detenido.');
+  }
+
+  Future<void> _takeAnotherPhoto() async {
+    await _stopAudio();
+    final controller = _cameraController;
+    if (controller != null && controller.value.isInitialized) {
+      try {
+        await controller.resumePreview();
+      } catch (error) {
+        debugPrint('No fue posible reanudar la vista de cámara: $error');
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _capturedImage = null;
+        _processingMessage = null;
+      });
+      ref.read(announcerProvider).announce('Cámara lista para otra foto.');
+    }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_cameraController?.dispose());
+    final player = _audioPlayer;
+    if (player != null) unawaited(player.dispose());
+    unawaited(_tts.stop());
+    super.dispose();
+  }
+
+  Future<void> _speakProcessingMessage() async {
+    try {
+      await _tts.setLanguage('es-ES');
+      await _tts.setSpeechRate(0.5);
+      await _tts.speak('Procesando tu imagen');
+    } catch (error) {
+      debugPrint(
+        'No fue posible reproducir el estado de procesamiento: $error',
+      );
+    }
   }
 
   @override
@@ -47,6 +211,10 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         StatusRegion(message: l10n.captureGuidance, large: true),
+        if (_processingMessage != null) ...[
+          const SizedBox(height: Dimensions.spacingBetweenTargets),
+          StatusRegion(message: _processingMessage!, large: true),
+        ],
         const SizedBox(height: Dimensions.spacingBetweenTargets),
         AccessibleSwitchTile(
           title: l10n.captureVoiceGuidance,
@@ -70,8 +238,25 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
           icon: Icons.camera,
           size: AccessibleButtonSize.large,
           expand: true,
-          onPressed: _takePhoto,
+          onPressed: _isProcessing ? null : _takePhoto,
         ),
+        if (_capturedImage != null && !_isProcessing) ...[
+          const SizedBox(height: Dimensions.spacingBetweenTargets),
+          ResponsiveAudioControls(
+            isPaused: _isAudioPaused,
+            onToggle: _toggleAudio,
+            onStop: _stopAudio,
+          ),
+          const SizedBox(height: Dimensions.spacingBetweenTargets),
+          AccessibleButton(
+            label: 'Tomar otra foto',
+            hint: 'Descarta la foto actual y vuelve a activar la cámara',
+            icon: Icons.camera_alt_outlined,
+            variant: AccessibleButtonVariant.secondary,
+            expand: true,
+            onPressed: _takeAnotherPhoto,
+          ),
+        ],
       ],
     );
 
@@ -80,7 +265,8 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final landscape = constraints.maxWidth > constraints.maxHeight &&
+            final landscape =
+                constraints.maxWidth > constraints.maxHeight &&
                 constraints.maxWidth >= 600;
 
             if (landscape) {
@@ -89,9 +275,18 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Expanded(flex: 3, child: _CameraPlaceholder()),
+                    Expanded(
+                      flex: 3,
+                      child: _CameraView(
+                        controller: _cameraController,
+                        capturedImage: _capturedImage,
+                      ),
+                    ),
                     const SizedBox(width: Dimensions.pagePadding),
-                    Expanded(flex: 2, child: SingleChildScrollView(child: controls)),
+                    Expanded(
+                      flex: 2,
+                      child: SingleChildScrollView(child: controls),
+                    ),
                   ],
                 ),
               );
@@ -104,7 +299,10 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
                 children: [
                   SizedBox(
                     height: (constraints.maxHeight * 0.35).clamp(160, 360),
-                    child: const _CameraPlaceholder(),
+                    child: _CameraView(
+                      controller: _cameraController,
+                      capturedImage: _capturedImage,
+                    ),
                   ),
                   const SizedBox(height: Dimensions.spacingBetweenTargets),
                   controls,
@@ -120,8 +318,11 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
 
 /// Lugar de la vista de cámara. Se excluye de la semántica: no aporta
 /// información al lector y obligaría a recorrer un elemento vacío.
-class _CameraPlaceholder extends StatelessWidget {
-  const _CameraPlaceholder();
+class _CameraView extends StatelessWidget {
+  const _CameraView({required this.controller, required this.capturedImage});
+
+  final CameraController? controller;
+  final Uint8List? capturedImage;
 
   @override
   Widget build(BuildContext context) {
@@ -133,9 +334,17 @@ class _CameraPlaceholder extends StatelessWidget {
           borderRadius: BorderRadius.circular(Dimensions.cornerRadius),
           border: Border.all(color: tokens.outline, width: 2),
         ),
-        child: Center(
-          child: Icon(Icons.photo_camera_outlined, size: 64, color: tokens.onSurfaceVariant),
-        ),
+        child: capturedImage != null
+            ? Image.memory(capturedImage!, fit: BoxFit.contain)
+            : controller?.value.isInitialized == true
+            ? CameraPreview(controller!)
+            : Center(
+                child: Icon(
+                  Icons.photo_camera_outlined,
+                  size: 64,
+                  color: tokens.onSurfaceVariant,
+                ),
+              ),
       ),
     );
   }

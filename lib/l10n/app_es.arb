@@ -5,8 +5,6 @@
   "@appTitle": { "description": "Nombre de la app" },
 
   "commonBack": "Atrás",
-  "commonVoiceCommand": "Comando de voz",
-  "commonVoiceCommandHint": "Di, por ejemplo, capturar o historial",
   "commonInfoPrefix": "Información",
   "commonWarningPrefix": "Advertencia",
   "commonErrorPrefix": "Error",

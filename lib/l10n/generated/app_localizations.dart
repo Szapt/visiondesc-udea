@@ -106,18 +106,6 @@ abstract class AppLocalizations {
   /// **'Atrás'**
   String get commonBack;
 
-  /// No description provided for @commonVoiceCommand.
-  ///
-  /// In es, this message translates to:
-  /// **'Comando de voz'**
-  String get commonVoiceCommand;
-
-  /// No description provided for @commonVoiceCommandHint.
-  ///
-  /// In es, this message translates to:
-  /// **'Di, por ejemplo, capturar o historial'**
-  String get commonVoiceCommandHint;
-
   /// No description provided for @commonInfoPrefix.
   ///
   /// In es, this message translates to:
