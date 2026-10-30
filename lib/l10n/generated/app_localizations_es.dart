@@ -205,20 +205,52 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String historyItemSemantics(String title, String subject, String date) {
-    return '$title. $subject, $date.';
+  String historyItemSemantics(String title, String time) {
+    return '$title. $time.';
   }
 
   @override
-  String historyGroupSemantics(String subject, int count) {
+  String get historyItemHint => 'Reproduce la descripción en audio';
+
+  @override
+  String historyGroupSemantics(String day, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
       other: '$count elementos',
       one: '1 elemento',
     );
-    return '$subject, $_temp0';
+    return '$day, $_temp0';
   }
+
+  @override
+  String get historyLoading => 'Cargando historial…';
+
+  @override
+  String get historyLoadError =>
+      'No fue posible cargar el historial. Revisa tu conexión e intenta de nuevo.';
+
+  @override
+  String get historyRetry => 'Reintentar';
+
+  @override
+  String get historyEmpty =>
+      'Aún no hay descripciones guardadas. Cuando captures o importes un material, aparecerá aquí.';
+
+  @override
+  String get historyPreparingAudio => 'Preparando el audio…';
+
+  @override
+  String historyPlaying(String title) {
+    return 'Reproduciendo: $title';
+  }
+
+  @override
+  String get historyStopped => 'Audio detenido.';
+
+  @override
+  String get historyAudioError =>
+      'No fue posible reproducir el audio. Intenta de nuevo.';
 
   @override
   String get settingsTitle => 'Ajustes';

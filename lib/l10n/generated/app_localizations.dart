@@ -433,14 +433,68 @@ abstract class AppLocalizations {
   /// No description provided for @historyItemSemantics.
   ///
   /// In es, this message translates to:
-  /// **'{title}. {subject}, {date}.'**
-  String historyItemSemantics(String title, String subject, String date);
+  /// **'{title}. {time}.'**
+  String historyItemSemantics(String title, String time);
+
+  /// No description provided for @historyItemHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Reproduce la descripción en audio'**
+  String get historyItemHint;
 
   /// No description provided for @historyGroupSemantics.
   ///
   /// In es, this message translates to:
-  /// **'{subject}, {count, plural, =1{1 elemento} other{{count} elementos}}'**
-  String historyGroupSemantics(String subject, int count);
+  /// **'{day}, {count, plural, =1{1 elemento} other{{count} elementos}}'**
+  String historyGroupSemantics(String day, int count);
+
+  /// No description provided for @historyLoading.
+  ///
+  /// In es, this message translates to:
+  /// **'Cargando historial…'**
+  String get historyLoading;
+
+  /// No description provided for @historyLoadError.
+  ///
+  /// In es, this message translates to:
+  /// **'No fue posible cargar el historial. Revisa tu conexión e intenta de nuevo.'**
+  String get historyLoadError;
+
+  /// No description provided for @historyRetry.
+  ///
+  /// In es, this message translates to:
+  /// **'Reintentar'**
+  String get historyRetry;
+
+  /// No description provided for @historyEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay descripciones guardadas. Cuando captures o importes un material, aparecerá aquí.'**
+  String get historyEmpty;
+
+  /// No description provided for @historyPreparingAudio.
+  ///
+  /// In es, this message translates to:
+  /// **'Preparando el audio…'**
+  String get historyPreparingAudio;
+
+  /// No description provided for @historyPlaying.
+  ///
+  /// In es, this message translates to:
+  /// **'Reproduciendo: {title}'**
+  String historyPlaying(String title);
+
+  /// No description provided for @historyStopped.
+  ///
+  /// In es, this message translates to:
+  /// **'Audio detenido.'**
+  String get historyStopped;
+
+  /// No description provided for @historyAudioError.
+  ///
+  /// In es, this message translates to:
+  /// **'No fue posible reproducir el audio. Intenta de nuevo.'**
+  String get historyAudioError;
 
   /// No description provided for @settingsTitle.
   ///

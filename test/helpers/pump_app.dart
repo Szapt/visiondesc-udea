@@ -9,6 +9,7 @@ import 'package:visiondesc/app.dart';
 import 'package:visiondesc/core/providers/core_providers.dart';
 import 'package:visiondesc/core/storage/key_value_store.dart';
 import 'package:visiondesc/core/theme/app_theme.dart';
+import 'package:visiondesc/features/history/presentation/history_providers.dart';
 import 'package:visiondesc/features/settings/data/settings_repository_impl.dart';
 import 'package:visiondesc/features/settings/domain/entities/app_settings.dart';
 import 'package:visiondesc/l10n/generated/app_localizations.dart';
@@ -25,11 +26,13 @@ class TestDeps {
   final InMemoryKeyValueStore store;
   final announcer = FakeAnnouncer();
   final haptics = FakeHapticService();
+  final history = FakeHistoryRepository();
 
   List<Override> get overrides => [
     keyValueStoreProvider.overrideWithValue(store),
     announcerProvider.overrideWithValue(announcer),
     hapticServiceProvider.overrideWithValue(haptics),
+    historyRepositoryProvider.overrideWithValue(history),
     ...appProviderOverrides,
   ];
 }

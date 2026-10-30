@@ -15,6 +15,8 @@ import '../../../core/accessibility/widgets/accessible_switch_tile.dart';
 import '../../../core/accessibility/widgets/audio_controls.dart';
 import '../../../core/accessibility/widgets/headings.dart';
 import '../../../core/accessibility/widgets/status_region.dart';
+import '../../../core/audio/description_player.dart';
+import '../../../core/config/api_config.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/color_tokens.dart';
 import '../../../core/theme/dimensions.dart';
@@ -98,7 +100,7 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
       final request =
           http.MultipartRequest(
               'POST',
-              Uri.parse('http://localhost:3000/api/convertir'),
+              Uri.parse('$apiBaseUrl/api/convertir'),
             )
             ..files.add(
               http.MultipartFile.fromBytes(
@@ -122,8 +124,8 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
       }
 
       final audio = await response.stream.toBytes();
-      final player = _audioPlayer ??= AudioPlayer();
-      await player.play(BytesSource(audio));
+      final player = _audioPlayer ??= createDescriptionPlayer(onComplete: _onAudioComplete);
+      await player.playDescription(audio);
       if (mounted) setState(() => _isAudioPaused = false);
       unawaited(ref.read(hapticServiceProvider).play(HapticPattern.captura));
       ref
@@ -159,8 +161,12 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
     final player = _audioPlayer;
     if (player == null) return;
     await player.stop();
-    if (mounted) setState(() => _isAudioPaused = false);
+    if (mounted) setState(() => _isAudioPaused = true);
     ref.read(announcerProvider).announce('Audio detenido.');
+  }
+
+  void _onAudioComplete() {
+    if (mounted) setState(() => _isAudioPaused = true);
   }
 
   Future<void> _takeAnotherPhoto() async {

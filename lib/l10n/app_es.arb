@@ -85,18 +85,24 @@
   "historySearch": "Buscar en el historial",
   "historyResultsCount": "{count, plural, =0{Sin resultados} =1{1 resultado} other{{count} resultados}}",
   "@historyResultsCount": { "placeholders": { "count": { "type": "int" } } },
-  "historyItemSemantics": "{title}. {subject}, {date}.",
+  "historyItemSemantics": "{title}. {time}.",
   "@historyItemSemantics": {
-    "placeholders": {
-      "title": { "type": "String" },
-      "subject": { "type": "String" },
-      "date": { "type": "String" }
-    }
+    "placeholders": { "title": { "type": "String" }, "time": { "type": "String" } }
   },
-  "historyGroupSemantics": "{subject}, {count, plural, =1{1 elemento} other{{count} elementos}}",
+  "historyItemHint": "Reproduce la descripción en audio",
+  "historyGroupSemantics": "{day}, {count, plural, =1{1 elemento} other{{count} elementos}}",
   "@historyGroupSemantics": {
-    "placeholders": { "subject": { "type": "String" }, "count": { "type": "int" } }
+    "placeholders": { "day": { "type": "String" }, "count": { "type": "int" } }
   },
+  "historyLoading": "Cargando historial…",
+  "historyLoadError": "No fue posible cargar el historial. Revisa tu conexión e intenta de nuevo.",
+  "historyRetry": "Reintentar",
+  "historyEmpty": "Aún no hay descripciones guardadas. Cuando captures o importes un material, aparecerá aquí.",
+  "historyPreparingAudio": "Preparando el audio…",
+  "historyPlaying": "Reproduciendo: {title}",
+  "@historyPlaying": { "placeholders": { "title": { "type": "String" } } },
+  "historyStopped": "Audio detenido.",
+  "historyAudioError":"No fue posible reproducir el audio. Intenta de nuevo.",
 
   "settingsTitle": "Ajustes",
   "settingsVoiceHeader": "Voz",

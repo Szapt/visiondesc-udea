@@ -53,5 +53,6 @@ lib/firebase_options.dart
 firebase.json
 *.env
 .env*
+!.env.example
 # Tokens de depuración de App Check pasados con --dart-define-from-file
 dart_defines*.json

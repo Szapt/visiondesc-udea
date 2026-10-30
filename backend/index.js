@@ -8,6 +8,7 @@ const multer = require("multer");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { GoogleAIFileManager } = require("@google/generative-ai/server");
 const googleTts = require("google-tts-api");
+const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -20,24 +21,56 @@ const modelName = process.env.GEMINI_MODEL || "gemini-flash-lite-latest";
 const accessibilityPrompt =
   "Actúa como un intérprete de accesibilidad. Transcribe el texto de este documento de forma fluida. Si hay imágenes, tablas o gráficas, explícalas descriptivamente. Entrega solo el texto final, sin formato Markdown, sin asteriscos y sin caracteres especiales, listo para ser leído por un motor de voz.";
 
+const historyTable = "audios";
 const apiKey = process.env.GEMINI_API_KEY;
 
 if (!apiKey) {
   throw new Error("Falta la variable de entorno GEMINI_API_KEY.");
 }
 
+// El historial es opcional: si faltan las credenciales, el servidor sigue
+// convirtiendo documentos pero no guarda ni lista consultas.
+const supabase =
+  process.env.SUPABASE_URL && process.env.SUPABASE_KEY
+    ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
+        auth: { persistSession: false },
+      })
+    : null;
+
+if (!supabase) {
+  console.warn("Faltan SUPABASE_URL o SUPABASE_KEY: el historial está desactivado.");
+}
+
 const allowedOrigins = (process.env.FRONTEND_ORIGIN || "*")
   .split(",")
-  .map((origin) => origin.trim());
+  .map((origin) => origin.trim().replace(/\/+$/, ""));
+
+const corsErrorMessage = "Origen no permitido por CORS.";
+
+// `flutter run -d chrome` usa un puerto distinto en cada ejecución, así que
+// cualquier puerto de la propia máquina se acepta además de la lista.
+function isLocalOrigin(origin) {
+  try {
+    return ["localhost", "127.0.0.1"].includes(new URL(origin).hostname);
+  } catch {
+    return false;
+  }
+}
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.includes("*") ||
+        allowedOrigins.includes(origin) ||
+        isLocalOrigin(origin)
+      ) {
         return callback(null, true);
       }
 
-      return callback(new Error("Origen no permitido por CORS."));
+      console.warn(`Origen no permitido por CORS: ${origin}`);
+      return callback(new Error(corsErrorMessage));
     },
   }),
 );
@@ -153,6 +186,26 @@ async function generateImageDescription(filePath, mimeType) {
   }
 }
 
+// Guarda la descripción (no el MP3) en la columna `audio`; el audio se
+// vuelve a generar al escucharlo desde el historial. Un fallo aquí no debe
+// impedir que el estudiante reciba su audio.
+async function saveToHistory(text) {
+  if (!supabase) return;
+
+  const { error } = await supabase
+    .from(historyTable)
+    .insert({ audio: text, creado: new Date().toISOString() });
+  if (error) console.error("No fue posible guardar en el historial:", error.message);
+}
+
+function requireHistory(_request, response, next) {
+  if (!supabase) {
+    return response.status(503).json({ error: "El historial no está configurado." });
+  }
+
+  next();
+}
+
 app.get("/api/health", (_request, response) => {
   response.json({ ok: true });
 });
@@ -195,6 +248,7 @@ app.post("/api/convertir", upload.single("documento"), async (request, response)
       processingTimeoutMs,
       "La conversión de texto a audio tardó demasiado.",
     );
+    await saveToHistory(text);
     response.setHeader("Content-Type", "audio/mpeg");
     response.setHeader("Content-Disposition", 'inline; filename="visiondesc.mp3"');
     response.setHeader("Cache-Control", "no-store");
@@ -224,11 +278,70 @@ app.post("/api/convertir", upload.single("documento"), async (request, response)
   }
 });
 
+app.get("/api/historial", requireHistory, async (_request, response) => {
+  const { data, error } = await supabase
+    .from(historyTable)
+    .select("id, creado, audio")
+    .order("creado", { ascending: false });
+
+  if (error) {
+    console.error("No fue posible leer el historial:", error.message);
+    return response.status(502).json({ error: "No fue posible leer el historial." });
+  }
+
+  return response.json(
+    data.map((row) => ({ id: row.id, creado: row.creado, descripcion: row.audio })),
+  );
+});
+
+app.get("/api/historial/:id/audio", requireHistory, async (request, response) => {
+  const id = Number(request.params.id);
+  if (!Number.isSafeInteger(id) || id < 1) {
+    return response.status(400).json({ error: "Identificador inválido." });
+  }
+
+  const { data, error } = await supabase
+    .from(historyTable)
+    .select("audio")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("No fue posible leer el historial:", error.message);
+    return response.status(502).json({ error: "No fue posible leer el historial." });
+  }
+  if (!data?.audio) {
+    return response.status(404).json({ error: "No existe esa consulta en el historial." });
+  }
+
+  try {
+    const audioBuffer = await withTimeout(
+      textToMp3(data.audio),
+      processingTimeoutMs,
+      "La conversión de texto a audio tardó demasiado.",
+    );
+    response.setHeader("Content-Type", "audio/mpeg");
+    response.setHeader("Content-Disposition", `inline; filename="visiondesc-${id}.mp3"`);
+    response.setHeader("Cache-Control", "private, max-age=86400");
+    return response.send(audioBuffer);
+  } catch (error) {
+    console.error("Error generando el audio del historial:", error);
+    return response.status(502).json({
+      error: "No fue posible generar el audio.",
+      detail: error instanceof Error ? error.message : "Error desconocido.",
+    });
+  }
+});
+
 app.use((error, _request, response, _next) => {
   if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE") {
     return response.status(413).json({
       error: "El archivo supera el límite de 20 MB.",
     });
+  }
+
+  if (error.message === corsErrorMessage) {
+    return response.status(403).json({ error: error.message });
   }
 
   if (error.message === "Solo se aceptan imágenes, PDF o PowerPoint.") {

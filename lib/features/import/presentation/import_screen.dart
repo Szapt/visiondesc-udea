@@ -9,6 +9,8 @@ import 'package:http_parser/http_parser.dart';
 import '../../../core/accessibility/widgets/accessible_button.dart';
 import '../../../core/accessibility/widgets/audio_controls.dart';
 import '../../../core/accessibility/widgets/headings.dart';
+import '../../../core/audio/description_player.dart';
+import '../../../core/config/api_config.dart';
 import '../../../core/layout/responsive.dart';
 import '../../../core/theme/dimensions.dart';
 import '../../../l10n/generated/app_localizations.dart';
@@ -49,8 +51,8 @@ class _ImportScreenState extends State<ImportScreen> {
       if (response.statusCode != 200) {
         throw Exception('El backend respondió ${response.statusCode}.');
       }
-      final player = _audioPlayer ??= AudioPlayer();
-      await player.play(BytesSource(await response.stream.toBytes()));
+      final player = _audioPlayer ??= createDescriptionPlayer(onComplete: _onAudioComplete);
+      await player.playDescription(await response.stream.toBytes());
       if (mounted) {
         setState(() {
           _isAudioPaused = false;
@@ -80,7 +82,11 @@ class _ImportScreenState extends State<ImportScreen> {
     final player = _audioPlayer;
     if (player == null) return;
     await player.stop();
-    if (mounted) setState(() => _isAudioPaused = false);
+    if (mounted) setState(() => _isAudioPaused = true);
+  }
+
+  void _onAudioComplete() {
+    if (mounted) setState(() => _isAudioPaused = true);
   }
 
   Future<void> _analyzeAnotherFile() async {
@@ -96,7 +102,7 @@ class _ImportScreenState extends State<ImportScreen> {
     final request =
         http.MultipartRequest(
             'POST',
-            Uri.parse('http://localhost:3000/api/convertir'),
+            Uri.parse('$apiBaseUrl/api/convertir'),
           )
           ..files.add(
             http.MultipartFile.fromBytes(
